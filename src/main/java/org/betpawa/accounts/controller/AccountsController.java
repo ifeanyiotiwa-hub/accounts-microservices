@@ -22,7 +22,7 @@ public class AccountsController {
     }
 
 
-    @PostMapping("/accounts")
+    @PostMapping("/myAccounts")
     public Accounts getAccountsDetails(@RequestBody Customer customer) {
         return accountsRepository.findByCustomerId(customer.getCustomerId());
     }
