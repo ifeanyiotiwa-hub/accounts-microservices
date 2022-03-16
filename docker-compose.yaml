@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  accounts:
+    image: codewithwinnie/accounts
+    mem_reservation: 700m
+    ports:
+      - "8080:8080"
+    networks:
+      - codewithwinnie-networks
+
+  loans:
+    image: codewithwinnie/loans
+    mem_reservation: 700m
+    ports:
+      - "8081:8081"
+    networks:
+      - codewithwinnie-networks
+  cards:
+    image: codewithwinnie/cards
+    mem_reservation: 700m
+    ports:
+      - "8082:8082"
+    networks:
+      - codewithwinnie-networks
+
+
+networks:
+  codewithwinnie-networks:
