@@ -20,7 +20,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 15s
         max_attempts: 3
         window: 120s
     environment:
@@ -28,7 +28,7 @@ services:
       SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
 
 
-  accounts:
+  accounts_0:
     image: codewithwinnie/accounts:latest
     ports:
       - "8080:8080"
@@ -40,7 +40,28 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 30s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+
+
+  accounts_1:
+    image: codewithwinnie/accounts:latest
+    ports:
+      - "8090:8080"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
         max_attempts: 3
         window: 120s
     environment:
@@ -60,7 +81,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 30s
         max_attempts: 3
         window: 120s
     environment:
@@ -80,7 +101,7 @@ services:
     deploy:
       restart_policy:
         condition: on-failure
-        delay: 5s
+        delay: 30s
         max_attempts: 3
         window: 120s
     environment:
