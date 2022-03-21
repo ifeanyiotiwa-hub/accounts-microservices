@@ -2,6 +2,7 @@ package org.betpawa.accounts.controller;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.betpawa.accounts.model.*;
 import org.betpawa.accounts.repository.AccountsRepository;
 import org.betpawa.accounts.services.AccountsServiceConfig;
@@ -55,6 +56,7 @@ public class AccountsController {
     }
 
     @PostMapping("/getCustomerDetails")
+    @CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallBack")
     public ResponseEntity<CustomerDetails> getCustomerDetails(@RequestBody Customer customer) {
         Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId());
         List<Loans> loans = loansFeignClients.getLoansDetails(customer);
@@ -66,5 +68,16 @@ public class AccountsController {
         customerDetails.setCards(cards);
 
         return ResponseEntity.ok().body(customerDetails);
+    }
+
+    private CustomerDetails myCustomerDetailsFallBack(Customer customer, Throwable t) {
+        Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId());
+        List<Loans> loans = loansFeignClients.getLoansDetails(customer);
+
+        CustomerDetails customerDetails = new CustomerDetails();
+        customerDetails.setAccounts(accounts);
+        customerDetails.setLoans(loans);
+
+        return customerDetails;
     }
 }
