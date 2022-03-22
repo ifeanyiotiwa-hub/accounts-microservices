@@ -3,16 +3,14 @@ package org.betpawa.accounts.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.betpawa.accounts.model.*;
 import org.betpawa.accounts.repository.AccountsRepository;
 import org.betpawa.accounts.services.AccountsServiceConfig;
 import org.betpawa.accounts.services.clients.CardsFeignClients;
 import org.betpawa.accounts.services.clients.LoansFeignClients;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -57,9 +55,11 @@ public class AccountsController {
 
     @PostMapping("/getCustomerDetails")
     @CircuitBreaker(name = "detailsForCustomerSupportApp", fallbackMethod = "myCustomerDetailsFallBack")
-    public ResponseEntity<CustomerDetails> getCustomerDetails(@RequestBody Customer customer) {
+    @Retry(name = "retryForCustomerDetails", fallbackMethod = "myCustomerDetailsFallBack")
+    public ResponseEntity<CustomerDetails> getCustomerDetails(@RequestHeader("betPawa-correlation-id")String correlationId
+                                                    , @RequestBody Customer customer) {
         Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId());
-        List<Loans> loans = loansFeignClients.getLoansDetails(customer);
+        List<Loans> loans = loansFeignClients.getLoansDetails(correlationId,customer);
         List<Cards> cards = cardsFeignClients.getCardDetails(customer);
 
         CustomerDetails customerDetails = new CustomerDetails();
@@ -70,14 +70,14 @@ public class AccountsController {
         return ResponseEntity.ok().body(customerDetails);
     }
 
-    private CustomerDetails myCustomerDetailsFallBack(Customer customer, Throwable t) {
+    private ResponseEntity<CustomerDetails> myCustomerDetailsFallBack(@RequestHeader("betPawa-correlation-id") String correlationId, Customer customer, Throwable t) {
         Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId());
-        List<Loans> loans = loansFeignClients.getLoansDetails(customer);
+        List<Loans> loans = loansFeignClients.getLoansDetails(correlationId,customer);
 
         CustomerDetails customerDetails = new CustomerDetails();
         customerDetails.setAccounts(accounts);
         customerDetails.setLoans(loans);
 
-        return customerDetails;
+        return ResponseEntity.ok().body(customerDetails);
     }
 }
