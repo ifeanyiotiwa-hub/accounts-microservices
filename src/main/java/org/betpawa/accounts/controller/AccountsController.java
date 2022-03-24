@@ -4,6 +4,7 @@ package org.betpawa.accounts.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
+import io.micrometer.core.annotation.Timed;
 import org.betpawa.accounts.model.*;
 import org.betpawa.accounts.repository.AccountsRepository;
 import org.betpawa.accounts.services.AccountsServiceConfig;
@@ -39,6 +40,7 @@ public class AccountsController {
 
 
     @PostMapping("/myAccounts")
+    @Timed(value = "getAccountDetails.time", description = "Time taken to return Account details")
     public Accounts getAccountsDetails(@RequestBody Customer customer) {
         return accountsRepository.findByCustomerId(customer.getCustomerId());
     }
