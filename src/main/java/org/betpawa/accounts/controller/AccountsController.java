@@ -9,6 +9,8 @@ import org.betpawa.accounts.repository.AccountsRepository;
 import org.betpawa.accounts.services.AccountsServiceConfig;
 import org.betpawa.accounts.services.clients.CardsFeignClients;
 import org.betpawa.accounts.services.clients.LoansFeignClients;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,9 +19,9 @@ import java.util.List;
 
 @RestController
 public class AccountsController {
-
-
-
+    
+    
+    private static final Logger LOGGER = LoggerFactory.getLogger(AccountsController.class);
     private final AccountsRepository accountsRepository;
 
     private final AccountsServiceConfig accountServiceConfig;
@@ -58,6 +60,7 @@ public class AccountsController {
     @Retry(name = "retryForCustomerDetails", fallbackMethod = "myCustomerDetailsFallBack")
     public ResponseEntity<CustomerDetails> getCustomerDetails(@RequestHeader("betPawa-correlation-id")String correlationId
                                                     , @RequestBody Customer customer) {
+        LOGGER.info("getCustomerDetails() method started.");
         Accounts accounts = accountsRepository.findByCustomerId(customer.getCustomerId());
         List<Loans> loans = loansFeignClients.getLoansDetails(correlationId,customer);
         List<Cards> cards = cardsFeignClients.getCardDetails(customer);
@@ -66,7 +69,8 @@ public class AccountsController {
         customerDetails.setAccounts(accounts);
         customerDetails.setLoans(loans);
         customerDetails.setCards(cards);
-
+    
+        LOGGER.info("getCustomerDetails() method ended.");
         return ResponseEntity.ok().body(customerDetails);
     }
 
