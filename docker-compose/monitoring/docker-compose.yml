@@ -1,0 +1,145 @@
+version: "3.8"
+
+services:
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - codewithwinnie
+
+
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - codewithwinnie
+
+
+  configserver:
+    image: codewithwinnie/configserver:latest
+    ports:
+      - "8071:8071"
+    depends_on:
+      - zipkin
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+    networks:
+      - codewithwinnie
+
+
+  eurekaserver:
+    image: codewithwinnie/eurekaserver:latest
+    ports:
+      - "8070:8070"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 15s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+
+  accounts:
+    image: codewithwinnie/accounts:latest
+    ports:
+      - "8080:8080"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+  loans:
+    image: codewithwinnie/loans:latest
+    ports:
+      - "8081:8081"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+  cards:
+    image: codewithwinnie/cards:latest
+    ports:
+      - "8082:8082"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+      - eurekaserver
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 30s
+        max_attempts: 3
+        window: 120s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+  gatewayserver:
+    image: codewithwinnie/gatewayserver:latest
+    ports:
+      - "8072:8072"
+    networks:
+      - codewithwinnie
+    depends_on:
+      - configserver
+      - eurekaserver
+      - accounts
+      - loans
+      - cards
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 45s
+        max_attempts: 3
+        window: 180s
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_CONFIG_IMPORT: configserver:http://configserver:8071
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eurekaserver:8070/eureka
+      SPRING_ZIPKIN_BASEURL: http://zipkin:9411/
+
+
+networks:
+  codewithwinnie:
