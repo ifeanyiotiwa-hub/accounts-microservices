@@ -12,6 +12,19 @@ services:
       - codewithwinnie
 
 
+  grafana:
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    networks:
+      - codewithwinnie
+
+
   zipkin:
     image: openzipkin/zipkin
     ports:
